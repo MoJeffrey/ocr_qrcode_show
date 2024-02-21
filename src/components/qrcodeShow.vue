@@ -17,15 +17,17 @@ export default {
   data() {
     return {
       imgList: [
-        '/img/code/0.jpg',
-        '/img/code/1.jpg',
-        '/img/code/2.jpg',
-        '/img/code/3.jpg',
-        '/img/code/4.jpg',
-        '/img/code/5.jpg',
-        '/img/code/6.jpg',
-        '/img/code/7.jpg',
-        '/img/code/8.jpg',
+        // '/img/code/0.jpg',
+        // '/img/code/1.jpg',
+        // '/img/code/2.jpg',
+        // '/img/code/3.jpg',
+        // '/img/code/4.jpg',
+        // '/img/code/5.jpg',
+        // '/img/code/6.jpg',
+        // '/img/code/7.jpg',
+        // '/img/code/8.jpg',
+        // '/img/code/9.jpg',
+        // '/img/code/10.jpg',
       ],
       query: {},
       qrcodeSize: 300,
@@ -46,10 +48,7 @@ export default {
   },
 
   async mounted() {
-    this.socket = new WebSocket(config.WebSocket_URL);
-
-    // 监听WebSocket消息事件
-    this.socket.onmessage = this.onMessage;
+    this.Init_websocket();
 
     this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
   },
@@ -66,6 +65,15 @@ export default {
     this.widthQuantity = width ? parseInt(width) : this.widthQuantity
   },
   methods: {
+    Init_websocket(){
+      this.socket = new WebSocket(config.WebSocket_URL);
+
+      // 监听WebSocket消息事件
+      this.socket.onmessage = this.onMessage;
+      this.socket.onclose = this.onclose;
+
+    },
+
     getQueryParam(key) {
       const queryParams = new URLSearchParams(window.location.search);
       return queryParams.get(key);
@@ -123,19 +131,52 @@ export default {
       return result;
     },
 
+    addImg(JSONData){
+      for(const item of JSONData['list']) {
+        const pathString = `${config.QRCode_URL}${item}.jpg`
+        this.imgList.push(pathString);
+      }
+
+      this.endLoopShowQRCode()
+      this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+    },
+
+    deleteImg(JSONData){
+      for(const item of JSONData['list']) {
+        const pathString = `${config.QRCode_URL}${item}.jpg`
+        this.imgList.splice(this.imgList.indexOf(pathString), 1);
+      }
+
+      this.endLoopShowQRCode()
+
+      if(this.imgList.length !== 0){
+        this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+      }
+
+    },
+
+    onclose(){
+      setTimeout(() => {
+        this.Init_websocket();
+
+        this.endLoopShowQRCode()
+        this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+        this.imgList = []
+      }, 2000);
+    },
+
     onMessage(data) {
       const JSONData = JSON.parse(data.data);
-
+      console.log(JSONData)
       if (JSONData['method'] === 'add'){
-        for(const item of JSONData['list']) {
-          const pathString = `${config.QRCode_URL}${item}.jpg`
-          this.imgList.push(pathString);
-        }
+        this.addImg(JSONData);
 
-        this.endLoopShowQRCode();
-        this.startLoopShowQRCode(this.highQuantity * this.widthQuantity);
-
+      // eslint-disable-next-line no-dupe-else-if
+      }else if(JSONData['method'] === 'delete'){
+        this.deleteImg(JSONData)
       }
+
+      console.log(this.imgList)
     },
   }
 }

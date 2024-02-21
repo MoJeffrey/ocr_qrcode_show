@@ -26,5 +26,5 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 ### 访问
 ```shell
-http://localhost:8080/highQuantity=2&widthQuantity&qrcodeSize=300
+http://localhost:8080/?highQuantity=1&widthQuantity=1&qrcodeSize=300
 ```
