@@ -94,10 +94,14 @@ export default {
       }
     },
 
-    endLoopShowQRCode(){
+    endLoopShowQRCode(codeNum){
       this.qrcodeExit = false;
       for(const item of this.intervalList){
         clearInterval(item);
+      }
+
+      for(let num = 0; num < codeNum; num ++) {
+        this.$refs.qrCodeDiv[num].src = "";
       }
     },
 
@@ -113,6 +117,7 @@ export default {
       if(dataList.length === currentIndex) currentIndex = 0
       el.src = dataList[currentIndex]
       currentIndex += 1
+      el.style = `border: 1px solid ${currentIndex % 2 === 0? 'red' : 'blue'};`
       return currentIndex
     },
 
@@ -137,8 +142,9 @@ export default {
         this.imgList.push(pathString);
       }
 
-      this.endLoopShowQRCode()
-      this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+      const codeNum = this.highQuantity * this.widthQuantity;
+      this.endLoopShowQRCode(codeNum)
+      this.startLoopShowQRCode(codeNum)
     },
 
     deleteImg(JSONData){
@@ -147,10 +153,11 @@ export default {
         this.imgList.splice(this.imgList.indexOf(pathString), 1);
       }
 
-      this.endLoopShowQRCode()
+      const codeNum = this.highQuantity * this.widthQuantity;
+      this.endLoopShowQRCode(codeNum)
 
       if(this.imgList.length !== 0){
-        this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+        this.startLoopShowQRCode(codeNum)
       }
 
     },
@@ -159,8 +166,9 @@ export default {
       setTimeout(() => {
         this.Init_websocket();
 
-        this.endLoopShowQRCode()
-        this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
+        const codeNum = this.highQuantity * this.widthQuantity;
+        this.endLoopShowQRCode(codeNum)
+        this.startLoopShowQRCode(codeNum)
         this.imgList = []
       }, 2000);
     },
@@ -206,6 +214,7 @@ export default {
   object-fit: cover;
   width: 100%;
   height: 100%;
+  border: 1px solid red;
 }
 
 </style>
