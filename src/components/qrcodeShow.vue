@@ -29,6 +29,9 @@ export default {
         // '/img/code/9.jpg',
         // '/img/code/10.jpg',
       ],
+      authorizationCode: null,
+      lastGenerator: null,
+      allGenerator: null,
       query: {},
       qrcodeSize: 300,
       highQuantity: 2,
@@ -49,7 +52,7 @@ export default {
 
   async mounted() {
     this.Init_websocket();
-
+    this.changeTitle();
     this.startLoopShowQRCode(this.highQuantity * this.widthQuantity)
   },
   unmounted() {
@@ -72,6 +75,10 @@ export default {
       this.socket.onmessage = this.onMessage;
       this.socket.onclose = this.onclose;
 
+    },
+
+    changeTitle(){
+      document.title = "生成器: " + this.authorizationCode;
     },
 
     getQueryParam(key) {
@@ -117,7 +124,7 @@ export default {
       if(dataList.length === currentIndex) currentIndex = 0
       el.src = dataList[currentIndex]
       currentIndex += 1
-      el.style = `border: 1px solid ${currentIndex % 2 === 0? 'red' : 'blue'};`
+      // el.style = `border: 1px solid ${currentIndex % 2 === 0? 'red' : 'blue'};`
       return currentIndex
     },
 
@@ -137,7 +144,13 @@ export default {
     },
 
     addImg(JSONData){
-      for(const item of JSONData['list']) {
+      const NowGenerator = (parseInt(this.authorizationCode) + this.lastGenerator) % this.allGenerator;
+
+      console.log(`NowGenerator: ${NowGenerator}`)
+      const NowImgList =  this.chunkArray(JSONData['list'], this.allGenerator)
+      if (NowImgList.length <= NowGenerator) return;
+
+      for(const item of NowImgList[NowGenerator]) {
         const pathString = `${config.QRCode_URL}${item}.jpg`
         this.imgList.push(pathString);
       }
@@ -150,7 +163,11 @@ export default {
     deleteImg(JSONData){
       for(const item of JSONData['list']) {
         const pathString = `${config.QRCode_URL}${item}.jpg`
-        this.imgList.splice(this.imgList.indexOf(pathString), 1);
+        const index = this.imgList.indexOf(pathString);
+
+        if (index !== -1) {
+          this.imgList.splice(this.imgList.indexOf(pathString), 1);
+        }
       }
 
       const codeNum = this.highQuantity * this.widthQuantity;
@@ -176,12 +193,20 @@ export default {
     onMessage(data) {
       const JSONData = JSON.parse(data.data);
       console.log(JSONData)
+      this.lastGenerator = JSONData['lastGenerator'];
+      this.allGenerator = JSONData['allGenerator'];
+
       if (JSONData['method'] === 'add'){
         this.addImg(JSONData);
 
       // eslint-disable-next-line no-dupe-else-if
-      }else if(JSONData['method'] === 'delete'){
-        this.deleteImg(JSONData)
+      } else if(JSONData['method'] === 'delete'){
+        this.deleteImg(JSONData);
+
+        // eslint-disable-next-line no-dupe-else-if
+      } else if(JSONData['method'] === 'authorization'){
+        this.authorizationCode = JSONData['code'];
+        this.changeTitle();
       }
 
       console.log(this.imgList)
