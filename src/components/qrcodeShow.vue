@@ -220,11 +220,10 @@ export default {
   min-height: 90vh;
   display: flex;
   //justify-content: space-between;
-  margin: 2rem;
+  justify-content: space-between;
 }
 
 .section {
-  margin-right: 100px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
