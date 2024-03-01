@@ -2,7 +2,8 @@
   <div class="container">
     <!-- 上半部分 -->
     <div class="section" v-for="hIndex in highQuantity" :key="hIndex">
-      <div class="qrcodeBox" v-for="wIndex in widthQuantity" :key="wIndex" :style="`width: ${qrcodeSize}px; height: ${qrcodeSize}px`">
+      <div class="qrcodeBox" v-for="wIndex in widthQuantity" :key="wIndex" ref="qrcodeBoxDiv"
+           :style="`width: ${qrcodeSize}px; height: ${qrcodeSize}px; border-color: ${borderColor};`">
         <img v-show="qrcodeExit" alt="Image" ref="qrCodeDiv" class="vue-qrcode" src=""/>
       </div>
     </div>
@@ -17,18 +18,14 @@ export default {
   data() {
     return {
       imgList: [
-        // '/img/code/0.jpg',
-        // '/img/code/1.jpg',
-        // '/img/code/2.jpg',
-        // '/img/code/3.jpg',
-        // '/img/code/4.jpg',
-        // '/img/code/5.jpg',
-        // '/img/code/6.jpg',
-        // '/img/code/7.jpg',
-        // '/img/code/8.jpg',
-        // '/img/code/9.jpg',
-        // '/img/code/10.jpg',
+        // {
+        //   disposable: true,
+        //   url: '/img/code/A000000001_1_116.jpg'
+        // }
       ],
+      intervalList: [],
+      borderColor: 'red',
+      borderColorList: ['red', 'blue', 'purple'],
       authorizationCode: null,
       lastGenerator: null,
       allGenerator: null,
@@ -88,21 +85,26 @@ export default {
     /**
      * 开始轮巡播放二维码
      * @param codeNum
-     * @returns {*[]}
+     * @returns
      */
     startLoopShowQRCode(codeNum){
+      if(this.imgList.length === 0) return
+
       this.qrcodeExit = true;
       this.intervalList = [];
+
       const dataList = this.chunkArray(this.imgList, codeNum);
 
       for(let num = 0; num < dataList.length; num ++){
-        const intervalId  = this.LoopShowQRCode(this.$refs.qrCodeDiv[num], dataList[num]);
+        const intervalId  = this.LoopShowQRCode(num, dataList[num]);
         this.intervalList.push(intervalId);
       }
     },
 
     endLoopShowQRCode(codeNum){
       this.qrcodeExit = false;
+      if ( this.intervalList.length === 0) return
+
       for(const item of this.intervalList){
         clearInterval(item);
       }
@@ -112,19 +114,52 @@ export default {
       }
     },
 
-    LoopShowQRCode(el, dataList){
+    /**
+     * 定时换图
+     * @param el_index
+     * @param dataList
+     * @returns {number}
+     */
+    LoopShowQRCode(el_index, dataList){
       let index = 0;
 
       return setInterval(() => {
-        index = this.showQRCode(el, dataList, index)
+        if (dataList.length === 0) return
+        index = this.showQRCode(el_index, dataList, index)
+
+
+        if (dataList[index - 1].disposable) {
+          setTimeout(() => {
+            if (dataList.length === 0) return
+
+            if (dataList[index - 1].disposable) {
+              const url = dataList[index - 1].url;
+              this.imgList = this.imgList.filter(item => item.url !== url);
+              dataList = dataList.filter(item => item.url !== url);
+            }
+
+            if(dataList.length === 0) {
+              this.$refs.qrCodeDiv[el_index].src = ''
+            }
+          }, 100);
+        }
+        
       }, 100)
     },
 
-    showQRCode(el, dataList, currentIndex) {
-      if(dataList.length === currentIndex) currentIndex = 0
-      el.src = dataList[currentIndex]
+    removeData(dataList, index){
+      let dataListIndex = dataList.indexOf(dataList[index - 1]);
+      if (dataListIndex !== -1) {
+        dataList.splice(dataListIndex, 1);
+      }
+      return dataList
+    },
+
+    showQRCode(el_index, dataList, currentIndex) {
+      if (dataList.length === currentIndex) currentIndex = 0
+      // this.borderColor = this.borderColorList[currentIndex % this.borderColorList.length]
+      this.$refs.qrCodeDiv[el_index].src = dataList[currentIndex].url
       currentIndex += 1
-      // el.style = `border: 1px solid ${currentIndex % 2 === 0? 'red' : 'blue'};`
       return currentIndex
     },
 
@@ -146,13 +181,16 @@ export default {
     addImg(JSONData){
       const NowGenerator = (parseInt(this.authorizationCode) + this.lastGenerator) % this.allGenerator;
 
-      console.log(`NowGenerator: ${NowGenerator}`)
       const NowImgList =  this.chunkArray(JSONData['list'], this.allGenerator)
       if (NowImgList.length <= NowGenerator) return;
 
       for(const item of NowImgList[NowGenerator]) {
         const pathString = `${config.QRCode_URL}${item}.jpg`
-        this.imgList.push(pathString);
+        const data = {
+          url: pathString,
+          disposable: JSONData['disposable']
+        }
+        this.imgList.push(data);
       }
 
       const codeNum = this.highQuantity * this.widthQuantity;
@@ -163,11 +201,7 @@ export default {
     deleteImg(JSONData){
       for(const item of JSONData['list']) {
         const pathString = `${config.QRCode_URL}${item}.jpg`
-        const index = this.imgList.indexOf(pathString);
-
-        if (index !== -1) {
-          this.imgList.splice(this.imgList.indexOf(pathString), 1);
-        }
+        this.imgList = this.imgList.filter(item => item.url !== pathString);
       }
 
       const codeNum = this.highQuantity * this.widthQuantity;
@@ -192,14 +226,13 @@ export default {
 
     onMessage(data) {
       const JSONData = JSON.parse(data.data);
-      console.log(JSONData)
-      this.lastGenerator = JSONData['lastGenerator'];
-      this.allGenerator = JSONData['allGenerator'];
 
       if (JSONData['method'] === 'add'){
+        this.lastGenerator = JSONData['lastGenerator'];
+        this.allGenerator = JSONData['allGenerator'];
         this.addImg(JSONData);
 
-      // eslint-disable-next-line no-dupe-else-if
+        // eslint-disable-next-line no-dupe-else-if
       } else if(JSONData['method'] === 'delete'){
         this.deleteImg(JSONData);
 
@@ -209,7 +242,6 @@ export default {
         this.changeTitle();
       }
 
-      console.log(this.imgList)
     },
   }
 }
@@ -219,26 +251,31 @@ export default {
 .container {
   min-height: 90vh;
   display: flex;
-  //justify-content: space-between;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 .section {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  margin-right: 70px;
+
 }
 
 .qrcodeBox {
   position: relative;
-  border: 1px solid #ccc;
+  border: 20px solid #ccc;
+  background: green;
 }
 
 .vue-qrcode {
   object-fit: cover;
   width: 100%;
   height: 100%;
-  border: 1px solid red;
 }
 
+img[src=""],
+img:not([src]) {
+  visibility: hidden;
+}
 </style>
