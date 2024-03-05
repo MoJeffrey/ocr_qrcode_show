@@ -143,7 +143,7 @@ export default {
             }
           }, 100);
         }
-        
+
       }, 100)
     },
 
@@ -218,15 +218,16 @@ export default {
         this.Init_websocket();
 
         const codeNum = this.highQuantity * this.widthQuantity;
+        this.imgList = []
         this.endLoopShowQRCode(codeNum)
         this.startLoopShowQRCode(codeNum)
-        this.imgList = []
       }, 2000);
     },
 
     onMessage(data) {
       const JSONData = JSON.parse(data.data);
 
+      console.log(JSONData);
       if (JSONData['method'] === 'add'){
         this.lastGenerator = JSONData['lastGenerator'];
         this.allGenerator = JSONData['allGenerator'];
