@@ -132,7 +132,7 @@ export default {
           setTimeout(() => {
             if (dataList.length === 0) return
 
-            if (dataList[index - 1].disposable) {
+            if (dataList[index - 1] && dataList[index - 1].disposable) {
               const url = dataList[index - 1].url;
               this.imgList = this.imgList.filter(item => item.url !== url);
               dataList = dataList.filter(item => item.url !== url);
