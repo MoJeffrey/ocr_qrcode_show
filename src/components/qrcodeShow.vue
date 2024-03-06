@@ -128,7 +128,7 @@ export default {
         index = this.showQRCode(el_index, dataList, index)
 
 
-        if (dataList[index - 1].disposable) {
+        if (dataList[index - 1] && dataList[index - 1].disposable) {
           setTimeout(() => {
             if (dataList.length === 0) return
 
@@ -158,7 +158,9 @@ export default {
     showQRCode(el_index, dataList, currentIndex) {
       if (dataList.length === currentIndex) currentIndex = 0
       // this.borderColor = this.borderColorList[currentIndex % this.borderColorList.length]
-      this.$refs.qrCodeDiv[el_index].src = dataList[currentIndex].url
+      if(dataList[currentIndex])
+        this.$refs.qrCodeDiv[el_index].src = dataList[currentIndex].url
+
       currentIndex += 1
       return currentIndex
     },
