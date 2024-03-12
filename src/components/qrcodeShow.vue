@@ -138,9 +138,7 @@ export default {
               dataList = dataList.filter(item => item.url !== url);
             }
 
-            if(dataList.length === 0) {
-              this.$refs.qrCodeDiv[el_index].src = ''
-            }
+            if(dataList.length === 0) this.$refs.qrCodeDiv[el_index].src = ''
           }, 100);
         }
 
