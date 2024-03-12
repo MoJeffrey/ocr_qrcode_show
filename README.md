@@ -34,7 +34,7 @@ npm i
 npm run serve
 ```
 
-### 访问
+## 访问
 ```shell
 http://localhost:8080/?highQuantity=1&widthQuantity=1&qrcodeSize=300
 ```
